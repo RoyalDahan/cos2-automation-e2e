@@ -36,6 +36,16 @@ type COSWorkerFixtures = {
 
 const ROOT = path.resolve(__dirname, '../..');
 
+/**
+ * Claude Code cloud sessions have no Edge and no display, and their preinstalled Chromium
+ * is not the revision this Playwright version pins, so it is launched by path, headless.
+ * Everywhere else (local Windows, CI) keeps Edge exactly as before.
+ */
+const IN_CLAUDE_CLOUD = process.env.CLAUDE_CODE_REMOTE === 'true';
+const BROWSER = IN_CLAUDE_CLOUD
+  ? { executablePath: '/opt/pw-browsers/chromium', headless: true }
+  : { channel: 'msedge', headless: process.env.HEADLESS === '1' };
+
 // roleName is a worker-scoped option, so it is declared in the worker type parameter.
 export const test = base.extend<COSFixtures, COSOptions & COSWorkerFixtures>({
   roleName: ['admin', { option: true, scope: 'worker' }],
@@ -59,8 +69,7 @@ export const test = base.extend<COSFixtures, COSOptions & COSWorkerFixtures>({
   liveContext: [
     async ({ role }, use) => {
       const context = await chromium.launchPersistentContext(path.join(ROOT, role.profileDir), {
-        channel: 'msedge',
-        headless: process.env.HEADLESS === '1',
+        ...BROWSER,
         ignoreHTTPSErrors: true,
         viewport: { width: 1600, height: 900 },
       });
