@@ -24,6 +24,8 @@ export interface Role {
   readonly canAdmin: boolean;
   /** May change educator or credential data. */
   readonly canEdit: boolean;
+  /** May click a masked SSN to reveal the full number. Everyone else sees the last four only. */
+  readonly canRevealSsn: boolean;
 }
 
 const DEFAULT_USER = process.env.COS_ADMIN_USER ?? 'cp-dahan_david@lacoe.edu';
@@ -44,6 +46,7 @@ export const ROLES: Record<RoleName, Role> = {
     username: DEFAULT_USER,
     canAdmin: true,
     canEdit: true,
+    canRevealSsn: true,
   },
   update: {
     name: 'update',
@@ -52,6 +55,7 @@ export const ROLES: Record<RoleName, Role> = {
     username: process.env.COS_UPDATE_USER || DEFAULT_USER,
     canAdmin: false,
     canEdit: true,
+    canRevealSsn: true,
   },
   view: {
     name: 'view',
@@ -60,6 +64,7 @@ export const ROLES: Record<RoleName, Role> = {
     username: process.env.COS_VIEW_USER || DEFAULT_USER,
     canAdmin: false,
     canEdit: false,
+    canRevealSsn: false,
   },
 };
 

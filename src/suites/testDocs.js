@@ -119,7 +119,7 @@ const TEST_DOCS = {
   },
   'DI-002': {
     description:
-      'Every SSN rendered must use the NNN-NN-NNNN display format. An inconsistently formatted SSN usually means the value reached the grid unformatted from the data layer.',
+      'Every SSN in the results grid must render masked, as ***-**-NNNN, until someone clicks it. A full number here means the masking was bypassed; a different shape usually means the value reached the grid unformatted from the data layer.',
   },
   'DI-003': {
     description:
@@ -214,6 +214,24 @@ const TEST_DOCS = {
   'PERM-009': {
     description:
       'The counterweight to every negative case above. Restricting write access must not quietly break read access — a role locked out of everything would pass all the negative tests while being useless.',
+  },
+
+  // ---- SSN masking ---------------------------------------------------------------
+  'SSN-001': {
+    description:
+      'Admin and Update users see every SSN masked as ***-**-NNNN. Clicking it on the search results grid must show the full NNN-NN-NNNN number, and clicking again must mask it. Uses DARKEL, NATALIE (223-45-5678).',
+  },
+  'SSN-002': {
+    description:
+      'The same reveal-and-hide check on the educator record screen: masked by default, full number after one click, masked again after a second click.',
+  },
+  'SSN-003': {
+    description:
+      'A View-only user must see only the last four digits on the search results grid. Clicking the SSN must not reveal it, and the full number must not be anywhere in the page, including hidden elements and attributes. Expected to FAIL when this project runs with an account that has SSN reveal rights.',
+  },
+  'SSN-004': {
+    description:
+      'The same View-only check on the educator record screen: only the last four digits, no reveal on click, and the full number absent from the page.',
   },
 };
 

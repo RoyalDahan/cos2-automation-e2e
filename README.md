@@ -8,10 +8,10 @@ can be executed on its own.
 
 | Role | What it is | Tests | Run it with |
 |---|---|---:|---|
-| **Admin** | Credential Online user — full rights, including the Admin area | **41** | `Admin.bat` |
-| **Update** | Can maintain data, but must not reach the Admin area | **38** | `Update.bat` |
-| **View** | Read-only — must not edit and must not reach the Admin area | **39** | `View.bat` |
-| | **Total** | **118** | |
+| **Admin** | Credential Online user — full rights, including the Admin area | **43** | `Admin.bat` |
+| **Update** | Can maintain data, but must not reach the Admin area | **40** | `Update.bat` |
+| **View** | Read-only — must not edit and must not reach the Admin area | **41** | `View.bat` |
+| | **Total** | **124** | |
 
 ---
 

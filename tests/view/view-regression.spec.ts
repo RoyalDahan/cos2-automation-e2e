@@ -5,6 +5,7 @@ import { registerEducatorRecordSuite } from '../../src/suites/educatorRecord.sui
 import { registerDataIntegritySuite } from '../../src/suites/dataIntegrity.suite';
 import { registerAccessibilitySuite } from '../../src/suites/accessibility.suite';
 import { registerPermissionsSuite } from '../../src/suites/permissions.suite';
+import { registerSsnMaskingSuite } from '../../src/suites/ssnMasking.suite';
 
 /**
  * View-only user - full regression.
@@ -22,3 +23,4 @@ registerEducatorRecordSuite(role);
 registerDataIntegritySuite(role);
 registerAccessibilitySuite(role);
 registerPermissionsSuite(role);
+registerSsnMaskingSuite(role);

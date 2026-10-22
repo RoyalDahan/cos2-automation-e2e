@@ -28,10 +28,12 @@ export function registerDataIntegritySuite(role: Role): void {
       }
     });
 
-    test('DI-002 every rendered SSN uses the NNN-NN-NNNN display format', async ({ results }) => {
+    test('DI-002 every rendered SSN uses the masked ***-**-NNNN display format', async ({ results }) => {
+      // Every role sees SSNs masked until it clicks one; the reveal itself is covered by
+      // the SSN masking suite.
       for (const value of await results.columnValues('ssn')) {
         if (value === '') continue;
-        expect(/^\d{3}-\d{2}-\d{4}$/.test(value), `SSN "${value}" must be NNN-NN-NNNN`).toBeTruthy();
+        expect(/^\*{3}-\*{2}-\d{4}$/.test(value), `SSN "${value}" must be ***-**-NNNN`).toBeTruthy();
       }
     });
 

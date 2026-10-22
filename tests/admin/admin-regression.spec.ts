@@ -7,6 +7,7 @@ import { registerDataIntegritySuite } from '../../src/suites/dataIntegrity.suite
 import { registerAccessibilitySuite } from '../../src/suites/accessibility.suite';
 import { registerAdminModulesSuite } from '../../src/suites/adminModules.suite';
 import { registerPermissionsSuite } from '../../src/suites/permissions.suite';
+import { registerSsnMaskingSuite } from '../../src/suites/ssnMasking.suite';
 
 /**
  * Admin (Credential Online user) - full regression.
@@ -24,3 +25,4 @@ registerDataIntegritySuite(role);
 registerAccessibilitySuite(role);
 registerAdminModulesSuite(role);
 registerPermissionsSuite(role);
+registerSsnMaskingSuite(role);
