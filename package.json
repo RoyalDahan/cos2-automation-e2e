@@ -1,0 +1,26 @@
+{
+  "name": "cos2-e2e",
+  "version": "1.0.0",
+  "private": true,
+  "description": "COS2 Credential Online System - Playwright end-to-end automation framework (LACOE AD&S)",
+  "scripts": {
+    "test": "playwright test",
+    "test:smoke": "playwright test --grep @smoke",
+    "test:regression": "playwright test --grep @regression",
+    "test:headed": "playwright test --headed",
+    "test:ui": "playwright test --ui",
+    "report": "playwright show-report reports/html",
+    "codegen": "playwright codegen $BASE_URL",
+    "typecheck": "tsc --noEmit",
+    "dashboard": "node scripts/generate-dashboard.js",
+    "test:admin": "playwright test --project=admin",
+    "test:update": "playwright test --project=update",
+    "test:view": "playwright test --project=view"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.1",
+    "@types/node": "^22.10.0",
+    "dotenv": "^16.4.5",
+    "typescript": "^5.7.2"
+  }
+}

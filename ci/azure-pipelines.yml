@@ -1,0 +1,112 @@
+# COS2 E2E - Azure DevOps pipeline
+#
+# The COS2 repo already lives in Azure DevOps
+# (dev.azure.com/LACOE/DataPlus/_git/CredentialsOnlineSystem), so this is the
+# pipeline that matters. The GitHub workflow beside it is a mirror for anyone
+# running the suite outside the LACOE org.
+#
+# Gate design:
+#   PR       -> smoke + security only. Fast, and blocks the merge.
+#   Nightly  -> full regression against QA.
+#   Manual   -> full regression against any environment, chosen at queue time.
+
+trigger:
+  branches:
+    include: [main, develop]
+  paths:
+    include: [src/**, tests/**, mock/**, playwright.config.ts]
+
+pr:
+  branches:
+    include: [main, develop]
+
+schedules:
+  - cron: '0 9 * * *' # 09:00 UTC = 02:00 Pacific, after the nightly deploy
+    displayName: Nightly full regression
+    branches:
+      include: [main]
+    always: true
+
+parameters:
+  - name: environment
+    displayName: Target environment
+    type: string
+    default: mock
+    values: [mock, dev, qa, uat]
+  - name: suite
+    displayName: Suite
+    type: string
+    default: auto
+    values: [auto, smoke, regression, security, all]
+
+variables:
+  - group: COS2-QA-Secrets # LACOE_PASS, DISTRICT_PASS, LACOE_ADMIN_PASS
+  - name: isPR
+    value: $[eq(variables['Build.Reason'], 'PullRequest')]
+
+pool:
+  vmImage: ubuntu-latest
+
+stages:
+  - stage: Test
+    displayName: Playwright E2E
+    jobs:
+      - job: e2e
+        displayName: Run suite
+        timeoutInMinutes: 45
+        steps:
+          - task: NodeTool@0
+            inputs:
+              versionSpec: '20.x'
+            displayName: Use Node 20
+
+          - script: npm ci
+            displayName: Install dependencies
+
+          - script: npx playwright install --with-deps chromium
+            displayName: Install Playwright browsers
+
+          - script: |
+              if [ "${{ parameters.suite }}" = "auto" ]; then
+                if [ "$(isPR)" = "True" ]; then GREP="@smoke|@security"; else GREP="@regression"; fi
+              elif [ "${{ parameters.suite }}" = "all" ]; then
+                GREP=""
+              else
+                GREP="@${{ parameters.suite }}"
+              fi
+              echo "##vso[task.setvariable variable=GREP]$GREP"
+            displayName: Select suite
+
+          - script: |
+              if [ -n "$(GREP)" ]; then
+                npx playwright test --grep "$(GREP)"
+              else
+                npx playwright test
+              fi
+            displayName: Run Playwright
+            env:
+              CI: 'true'
+              TEST_TARGET: $[ replace(replace('${{ parameters.environment }}', 'mock', 'mock'), 'dev', 'live') ]
+              BASE_URL: $(BASE_URL_${{ upper(parameters.environment) }})
+              LACOE_USER: $(LACOE_USER)
+              LACOE_PASS: $(LACOE_PASS)
+              LACOE_ADMIN_USER: $(LACOE_ADMIN_USER)
+              LACOE_ADMIN_PASS: $(LACOE_ADMIN_PASS)
+              DISTRICT_USER: $(DISTRICT_USER)
+              DISTRICT_PASS: $(DISTRICT_PASS)
+
+          - task: PublishTestResults@2
+            condition: succeededOrFailed()
+            displayName: Publish test results
+            inputs:
+              testResultsFormat: JUnit
+              testResultsFiles: reports/junit/results.xml
+              testRunTitle: 'COS2 E2E - ${{ parameters.environment }}'
+              mergeTestResults: true
+
+          - task: PublishPipelineArtifact@1
+            condition: succeededOrFailed()
+            displayName: Publish HTML report and failure traces
+            inputs:
+              targetPath: reports
+              artifact: 'playwright-report-$(Build.BuildId)'

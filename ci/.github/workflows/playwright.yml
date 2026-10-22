@@ -1,0 +1,56 @@
+name: COS2 E2E
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'mock or live'
+        default: 'mock'
+        type: choice
+        options: [mock, live]
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+
+      - name: Run Playwright
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            npx playwright test --grep "@smoke|@security"
+          else
+            npx playwright test
+          fi
+        env:
+          CI: true
+          TEST_TARGET: ${{ github.event.inputs.target || 'mock' }}
+          BASE_URL: ${{ secrets.BASE_URL }}
+          LACOE_USER: ${{ secrets.LACOE_USER }}
+          LACOE_PASS: ${{ secrets.LACOE_PASS }}
+          LACOE_ADMIN_USER: ${{ secrets.LACOE_ADMIN_USER }}
+          LACOE_ADMIN_PASS: ${{ secrets.LACOE_ADMIN_PASS }}
+          DISTRICT_USER: ${{ secrets.DISTRICT_USER }}
+          DISTRICT_PASS: ${{ secrets.DISTRICT_PASS }}
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: reports/
+          retention-days: 30

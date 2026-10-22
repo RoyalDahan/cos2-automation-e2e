@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "Bash(npm test *)",
+      "Bash(pkill -f \"npm test\")",
+      "PowerShell(npx tsc --noEmit -p tsconfig.json 2>&1)",
+      "PowerShell(node -e \"const {chromium}=require\\('@playwright/test'\\); chromium.launch\\({channel:'msedge'}\\).then\\(async b=>{console.log\\('EDGE OK ->', b.version\\(\\)\\); await b.close\\(\\);}\\).catch\\(e=>{console.log\\('EDGE FAILED ->', e.message.split\\('\\\\n'\\)[0]\\); process.exit\\(1\\);}\\)\")",
+      "PowerShell(node -e \"const {chromium}=require\\('@playwright/test'\\);const path=require\\('path'\\);const dir=path.resolve\\('.auth/edge-profile'\\);\\(async\\(\\)=>{try{const ctx=await chromium.launchPersistentContext\\(dir,{channel:'msedge',headless:true}\\);const p=ctx.pages\\(\\)[0]||await ctx.newPage\\(\\);await p.goto\\('https://credentialsonlinesystemdev.azurewebsites.net/',{waitUntil:'load'}\\);const hasSearch=await p.locator\\('input[placeholder=\\\\\"Name, SSN, SEID, EID\\\\\"]'\\).first\\(\\).isVisible\\(\\).catch\\(\\(\\)=>false\\);console.log\\('PROFILE DIR ->',dir\\);console.log\\('URL ->',p.url\\(\\)\\);console.log\\('SEARCH BOX VISIBLE ->',hasSearch\\);console.log\\(hasSearch?'STATE -> already signed in':'STATE -> not signed in yet \\(expected on first run\\)'\\);await ctx.close\\(\\);}catch\\(e\\){console.log\\('FAILED ->',e.message.split\\('\\\\n'\\)[0]\\);process.exit\\(1\\);}}\\)\\(\\)\")",
+      "PowerShell(node \"C:\\\\Users\\\\dudu_\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\c--Lacoe-cos2-automation-e2e\\\\314fc633-2556-47c7-90e5-536f34a90323\\\\scratchpad\\\\smoke.js\")",
+      "PowerShell(node smoke-check.js)",
+      "PowerShell(Select-String -Path inspect.log -Pattern \"^\\\\[|url   ->|rows  ->|value ->|VERDICT\" | ForEach-Object { $_.Line })",
+      "PowerShell(Select-String -Path run.log -Pattern \"Expected:|Received:|Locator:|Error:|toContain|Timeout:\" -Context 0,1 | ForEach-Object { $_.Line } | Select-Object -First 50)",
+      "Bash(sed -i \"/^    eid: '/d\" mock/data.js)",
+      "Bash(sed -i '/e\\\\.eid\\\\.toLowerCase\\(\\) === term/d' mock/server.js)",
+      "Bash(sed -i '/data-testid=\"cell-eid\"/d' mock/server.js)",
+      "Bash(sed -i '/data-testid=\"educator-eid\"/d' mock/server.js)",
+      "Bash(sed -i 's|Search by Name, SSN, SEID or EID|Search by Name, SSN or SEID|' mock/server.js)",
+      "PowerShell(Select-String -Path reports\\\\dashboard.html -Pattern 'SRCH-003b|SEC-0' -Context 0,5 | Select-Object -First 2 | ForEach-Object { $_.Line; $_.Context.PostContext })",
+      "PowerShell(node -e \"const fs=require\\('fs'\\);const p=JSON.parse\\(fs.readFileSync\\('package.json','utf8'\\)\\);p.scripts=p.scripts||{};p.scripts.dashboard='node scripts/generate-dashboard.js';fs.writeFileSync\\('package.json',JSON.stringify\\(p,null,2\\)+'\\\\n'\\);console.log\\(JSON.stringify\\(p.scripts,null,2\\)\\);\")",
+      "PowerShell(node dash-check.js)",
+      "PowerShell(npx playwright test --list 2>&1)",
+      "PowerShell($env:COS_DASHBOARD_CHILD=\"1\"; npx playwright test --list --reporter=json 2>&1 | Select-Object -First 3; Write-Host \"...exit=$LASTEXITCODE\"; Remove-Item Env:\\\\COS_DASHBOARD_CHILD)",
+      "PowerShell(node -e \"const {spawnSync}=require\\('child_process'\\);const r=spawnSync\\(process.platform==='win32'?'npx.cmd':'npx',['playwright','test','--list','--reporter=json'],{cwd:process.cwd\\(\\),encoding:'utf8',maxBuffer:67108864,env:{...process.env,COS_DASHBOARD_CHILD:'1'}}\\);console.log\\('error:',r.error&&r.error.message\\);console.log\\('status:',r.status\\);console.log\\('stdout len:',\\(r.stdout||''\\).length\\);console.log\\('stderr head:',\\(r.stderr||''\\).slice\\(0,200\\)\\);\")",
+      "PowerShell(Select-String -Path run.log -Pattern \"^\\\\s+\\\\d+\\\\\\) \\\\[admin\\\\]|Expected|Received|Locator:|Error: expect\" -Context 0,3 | ForEach-Object { $_.Line; \\($_.Context.PostContext | Select-Object -First 3\\) } | Select-Object -First 60)",
+      "PowerShell(Move-Item -Path \"src\\\\suites\\\\testDocs.ts\" -Destination \"src\\\\suites\\\\testDocs.js\" -Force)",
+      "PowerShell(node -e \"const {TEST_DOCS}=require\\('./src/suites/testDocs.js'\\);console.log\\('docs entries:',Object.keys\\(TEST_DOCS\\).length\\);console.log\\('sample:',TEST_DOCS['DI-005'].description.slice\\(0,70\\)+'...'\\);\")",
+      "PowerShell(node scripts/generate-dashboard.js)"
+    ]
+  }
+}
