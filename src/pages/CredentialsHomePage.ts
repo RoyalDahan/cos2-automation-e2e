@@ -44,9 +44,19 @@ export class CredentialsHomePage extends BasePage {
     return this.page.locator(LIVE_DOCUMENT_SUBMIT).first();
   }
 
+  /**
+   * Every test starts here. Clicking the logo keeps the live Blazor session and the same
+   * tab, as a person would; a fresh navigation is only the fallback for when the logo is
+   * not on screen, such as after a test left the browser on another site.
+   */
   async goto(): Promise<void> {
-    await this.page.goto('/');
+    if (await this.header.isVisible().catch(() => false)) {
+      await this.header.click();
+    } else {
+      await this.page.goto('/');
+    }
     await this.page.waitForLoadState('load');
+    await expect.poll(() => new URL(this.page.url()).pathname).toBe('/');
   }
 
   async expectLoaded(): Promise<void> {

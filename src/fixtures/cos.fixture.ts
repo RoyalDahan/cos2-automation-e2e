@@ -1,5 +1,4 @@
-import { test as base, BrowserContext, chromium, expect } from '@playwright/test';
-import * as path from 'path';
+import { test as base, BrowserContext, expect } from '@playwright/test';
 import { CredentialsHomePage } from '../pages/CredentialsHomePage';
 import { SearchResultsPage } from '../pages/SearchResultsPage';
 import { CredentialSummaryPage } from '../pages/CredentialSummaryPage';
@@ -7,6 +6,7 @@ import { CredentialDetailPage } from '../pages/CredentialDetailPage';
 import { AdminPage } from '../pages/AdminPage';
 import { Role, RoleName, roleByName } from '../roles/roles';
 import { ensureLoggedIn } from '../auth/liveLogin';
+import { attachToBrowser } from './sharedBrowser';
 
 /**
  * Role-aware fixtures.
@@ -34,18 +34,6 @@ type COSWorkerFixtures = {
   liveContext: BrowserContext;
 };
 
-const ROOT = path.resolve(__dirname, '../..');
-
-/**
- * Claude Code cloud sessions have no Edge and no display, and their preinstalled Chromium
- * is not the revision this Playwright version pins, so it is launched by path, headless.
- * Everywhere else (local Windows, CI) keeps Edge exactly as before.
- */
-const IN_CLAUDE_CLOUD = process.env.CLAUDE_CODE_REMOTE === 'true';
-const BROWSER = IN_CLAUDE_CLOUD
-  ? { executablePath: '/opt/pw-browsers/chromium', headless: true }
-  : { channel: 'msedge', headless: process.env.HEADLESS === '1' };
-
 // roleName is a worker-scoped option, so it is declared in the worker type parameter.
 export const test = base.extend<COSFixtures, COSOptions & COSWorkerFixtures>({
   roleName: ['admin', { option: true, scope: 'worker' }],
@@ -58,25 +46,18 @@ export const test = base.extend<COSFixtures, COSOptions & COSWorkerFixtures>({
   ],
 
   /**
-   * Worker-scoped and backed by a real profile directory on disk.
+   * The account's long-lived browser (see sharedBrowser.ts), never closed by the tests.
    *
-   * Two reasons it must not be test-scoped. COS2 re-establishes its session through the
-   * portal SSO handoff rather than restoring it from the profile, so a per-test browser
-   * would pay the full sign-in on every single test. And the profile is what lets the
-   * sign-in survive between runs at all - Playwright's default context is a throwaway
-   * profile, which is why Entra ID used to demand MFA on every run.
+   * Worker teardown only drops the connection. Playwright replaces the worker after every
+   * failed test, and with a browser it owned that meant a closed window and a fresh
+   * portal sign-in; attaching instead keeps the window, the tab and the sign-in.
    */
   liveContext: [
     async ({ role }, use) => {
-      const context = await chromium.launchPersistentContext(path.join(ROOT, role.profileDir), {
-        ...BROWSER,
-        ignoreHTTPSErrors: true,
-        viewport: { width: 1600, height: 900 },
-      });
+      const browser = await attachToBrowser(role.profileDir);
+      const context = browser.contexts()[0];
       context.setDefaultTimeout(15_000);
       await use(context);
-      // Closing is safe: the profile on disk keeps the session, exactly like real Edge.
-      await context.close();
     },
     { scope: 'worker' },
   ],

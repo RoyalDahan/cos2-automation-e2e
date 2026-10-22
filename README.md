@@ -42,15 +42,20 @@ npx playwright test --project=update
 npx playwright test --project=view
 
 npx playwright test                       # all three, one after another
-npx playwright test --project=view --grep @negative
+npx playwright test --project=view --grep "@negative"
 npx playwright test --project=admin --grep "SRCH-001"
 ```
+
+`--project` picks the role; leave it out and all three roles run. `--grep` narrows the run to
+tests whose name contains the text, such as a tag (`"@ssn"`) or a case id (`"SRCH-001"`).
+In PowerShell always put a tag in quotes: an unquoted `@ssn` is read as a PowerShell variable and
+the command fails before Playwright starts.
 
 ---
 
 ## The first run signs you in. Later runs do not.
 
-**On the first run for a role**, a real Edge window opens and the suite drives the LACOE
+**On the first run for an account**, a maximized Edge window opens and the suite drives the LACOE
 District Portal sign-in for you:
 
 ```
@@ -69,28 +74,32 @@ your phone; everything after that is automatic. You have three minutes
 
 **Every run after that** prints `✓ Already signed in` and goes straight to the tests.
 
-### How the sign-in is remembered
+### The browser stays open
 
-Each role has its own **Edge profile directory on disk**:
+The suite starts Edge itself, maximized, and the tests connect to it. They never close it — not
+between tests, not after a failed test, not at the end of the run. The next run finds the same
+window, still signed in, and carries on in it. Close the window yourself whenever you like; the
+next run simply opens a new one.
+
+To put the window on a particular monitor, set `BROWSER_WINDOW_POSITION` in `.env` (for example
+`-1920,0` for a monitor to the left of your main one). It opens there and maximizes.
+
+### One profile per account
+
+Each **account** has its own Edge profile directory on disk, named after it:
 
 ```
-.auth/profile-admin
-.auth/profile-update
-.auth/profile-view
+.auth/profile-cp-dahan_david_lacoe.edu
 ```
 
-The suite launches Edge with `launchPersistentContext` against that folder, which is exactly
-what makes your normal browser remember you. Playwright's default is a throwaway profile — a
-brand-new empty browser every run — which is why sign-in used to be demanded every single time.
+While all three roles use the same account they share this one profile, one browser and one
+sign-in. Once a role gets its own account in `.env`, it automatically gets its own profile and
+its own browser, so a run can never silently execute as whoever signed in last.
 
-Two consequences worth knowing:
+A headless run (`Admin.bat headless`) uses an invisible browser that also stays running. Asking
+for a visible run later closes it and opens a visible one.
 
-- **Closing the browser at the end of a run costs you nothing.** The session lives in the profile
-  folder, just like closing and reopening real Edge.
-- **Roles never share a profile.** A run therefore cannot silently execute as whoever signed in
-  last, which would make every permission assertion meaningless.
-
-To force a role to sign in again, delete its profile folder.
+To force an account to sign in again, close its Edge window and delete its profile folder.
 
 ---
 
@@ -108,6 +117,7 @@ src/suites/
   accessibility.suite.ts    6 tests   language, title, labels, keyboard, headers, overflow
   adminModules.suite.ts     4 tests   the Admin area            (Admin only)
   permissions.suite.ts    4–6 tests   what each role may and may not do
+  ssnMasking.suite.ts       2 tests   masked SSN; reveal on click for Admin/Update, never for View
 
 tests/
   admin/admin-regression.spec.ts      composes all seven suites
@@ -245,26 +255,22 @@ BASE_URL=https://credentialsonlinesystemdev.azurewebsites.net/
 PORTAL_URL=https://districtbusinessportaldev.lacoe.edu/
 
 COS_ADMIN_USER=cp-dahan_david@lacoe.edu
-COS_UPDATE_USER=
-COS_VIEW_USER=
+COS_UPDATE_USER=cp-dahan_david@lacoe.edu
+COS_VIEW_USER=cp-dahan_david@lacoe.edu
 
 LOGIN_WAIT_MS=180000
+# BROWSER_WINDOW_POSITION=-1920,0
 ```
+
+Copy `.env.example` to `.env` to start. There are no passwords: sign-in goes through Microsoft
+with your phone or passkey, so only the account name is needed.
 
 ### Running the other two roles with one account
 
-Three separate accounts do not exist yet, and they are not required. `COS_UPDATE_USER` and
-`COS_VIEW_USER` fall back to `COS_ADMIN_USER`, so the workflow is:
-
-1. Change your account's role in the District Portal (for example to Update).
-2. Run the matching batch file — `Update.bat`.
-3. Sign in once for that role; its profile is saved separately from the others.
-
-The profile directories stay separate regardless of the account used, so a session left over
-from a previous role can never leak into the next run. If you switch your account's role again,
-delete that role's profile folder (`.auth/profile-update`) so the next run signs in fresh.
-
-Set `COS_UPDATE_USER` / `COS_VIEW_USER` only once real per-role accounts exist.
+Separate Update and View accounts do not exist yet, so all three roles sign in as your account.
+The run uses whatever rights COS2 gives that account, so tests that check a narrower role (for
+example SSN-003, "View sees only the last four digits") are expected to fail until the role has
+its own account. When it does, put that account in `COS_UPDATE_USER` / `COS_VIEW_USER`.
 
 ---
 
@@ -294,7 +300,7 @@ reports/
   junit/ json/                       CI-consumable results
   artifacts/                         screenshots and traces from failures
 
-.auth/profile-admin|update|view      Edge profiles — these are what remember your sign-in
+.auth/profile-<account>             Edge profiles — these are what remember your sign-in
 ```
 
 ---

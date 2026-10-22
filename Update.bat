@@ -10,8 +10,8 @@ REM           Update.bat headless   run with no visible browser
 REM           Update.bat debug      step through with the Playwright Inspector
 REM           Update.bat ui         open the Playwright UI runner
 REM
-REM  Signs in with COS_UPDATE_USER from .env. If that is not set you will be
-REM  asked to type the account yourself on the first run.
+REM  Signs in with COS_UPDATE_USER from .env (your own account until the role
+REM  gets its own). The browser window stays open between runs.
 REM ===========================================================================
 setlocal
 cd /d "%~dp0"
