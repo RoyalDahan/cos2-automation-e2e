@@ -46,18 +46,21 @@ export class CredentialsHomePage extends BasePage {
   }
 
   /**
-   * Every test starts here. Clicking the logo keeps the live Blazor session and the same
-   * tab, as a person would; a fresh navigation is only the fallback for when the logo is
-   * not on screen, such as after a test left the browser on another site.
+   * Every test starts here, from wherever the previous test - or the previous run - left
+   * the browser. Clicking the logo keeps the live Blazor session and the same tab, as a
+   * person would. When that does not land on Home within a few seconds (the logo is not
+   * on screen, or does not navigate from the screen the browser was left on), it falls
+   * back to opening Home directly.
    */
   async goto(): Promise<void> {
+    const onHome = () => new URL(this.page.url()).pathname === '/';
     if (await this.header.isVisible().catch(() => false)) {
-      await this.header.click();
-    } else {
-      await this.page.goto(appUrl('/'));
+      await this.header.click().catch(() => undefined);
+      await expect.poll(onHome, { timeout: 5_000 }).toBe(true).catch(() => undefined);
     }
+    if (!onHome()) await this.page.goto(appUrl('/'));
     await this.page.waitForLoadState('load');
-    await expect.poll(() => new URL(this.page.url()).pathname).toBe('/');
+    await expect.poll(onHome).toBe(true);
   }
 
   async expectLoaded(): Promise<void> {
