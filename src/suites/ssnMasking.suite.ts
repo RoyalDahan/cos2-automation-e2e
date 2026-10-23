@@ -22,6 +22,23 @@ const FULL = SUBJECT.formattedSsn;
 /** The clickable span COS2 renders: <span data-testid="ssn-toggle-N" title="Show SSN">. */
 const SSN_TOGGLE = '[data-testid^="ssn-toggle"]';
 
+/** The educator record shows the SSN as the value of a read-only, clickable input. */
+const RECORD_SSN_FIELD = '[data-testid="educator-field-ssn"]';
+
+/**
+ * Where an SSN is shown. The grid renders it as text and the record as an input's value,
+ * and the two are read differently - toHaveText never sees an input's value.
+ */
+interface SsnOnScreen {
+  el: Locator;
+  isInput: boolean;
+}
+
+async function expectShowing(ssn: SsnOnScreen, value: string, message: string): Promise<void> {
+  if (ssn.isInput) await expect(ssn.el, message).toHaveValue(value);
+  else await expect(ssn.el, message).toHaveText(value);
+}
+
 /**
  * The SSN element inside `scope`. Falls back to the visible masked text, so a role whose
  * markup has no toggle at all (the correct View-only build) is still located and checked.
@@ -57,27 +74,27 @@ async function reportIfMissing(page: Page, ssn: Locator): Promise<void> {
 }
 
 /** Masked -> click -> full -> click -> masked again. */
-async function expectToggleRevealsAndHides(ssn: Locator): Promise<void> {
-  await expect(ssn, 'SSN must be masked until the user asks to see it').toHaveText(MASKED);
+async function expectToggleRevealsAndHides(ssn: SsnOnScreen): Promise<void> {
+  await expectShowing(ssn, MASKED, 'SSN must be masked until the user asks to see it');
 
-  await ssn.click();
-  await expect(ssn, 'first click must reveal the full SSN').toHaveText(FULL);
+  await ssn.el.click();
+  await expectShowing(ssn, FULL, 'first click must reveal the full SSN');
 
-  await ssn.click();
-  await expect(ssn, 'second click must mask the SSN again').toHaveText(MASKED);
+  await ssn.el.click();
+  await expectShowing(ssn, MASKED, 'second click must mask the SSN again');
 }
 
 /** Masked, stays masked after a click, and the full number is nowhere in the DOM. */
-async function expectNoReveal(page: Page, ssn: Locator): Promise<void> {
-  await expect(ssn, 'only the last four digits may be shown').toHaveText(MASKED);
+async function expectNoReveal(page: Page, ssn: SsnOnScreen): Promise<void> {
+  await expectShowing(ssn, MASKED, 'only the last four digits may be shown');
   await expectSsnNotExposed(page, FULL);
 
-  await ssn.click();
+  await ssn.el.click();
   // A negative assertion has to give the Blazor round trip time to happen, or it passes
   // merely because the server has not answered yet.
   await page.waitForTimeout(1_500);
 
-  await expect(ssn, 'clicking must not reveal the full SSN to this role').toHaveText(MASKED);
+  await expectShowing(ssn, MASKED, 'clicking must not reveal the full SSN to this role');
   await expectSsnNotExposed(page, FULL);
 }
 
@@ -88,13 +105,13 @@ export function registerSsnMaskingSuite(role: Role): void {
         await home.goto();
         await home.searchEducator(SUBJECT.lastName);
         await results.expectLoaded();
-        await expectToggleRevealsAndHides(ssnIn(results.cell('ssn', 0)));
+        await expectToggleRevealsAndHides({ el: ssnIn(results.cell('ssn', 0)), isInput: false });
       });
 
       test('SSN-002 educator record: clicking the SSN reveals it, clicking again masks it', async ({ page, home }) => {
         await openSubjectRecord(page, home);
-        const ssn = ssnIn(page.locator('body'));
-        await reportIfMissing(page, ssn);
+        const ssn = { el: page.locator(RECORD_SSN_FIELD), isInput: true };
+        await reportIfMissing(page, ssn.el);
         await expectToggleRevealsAndHides(ssn);
       });
     } else {
@@ -102,13 +119,13 @@ export function registerSsnMaskingSuite(role: Role): void {
         await home.goto();
         await home.searchEducator(SUBJECT.lastName);
         await results.expectLoaded();
-        await expectNoReveal(page, ssnIn(results.cell('ssn', 0)));
+        await expectNoReveal(page, { el: ssnIn(results.cell('ssn', 0)), isInput: false });
       });
 
       test('SSN-004 educator record: only the last four digits are shown and a click reveals nothing @negative', async ({ page, home }) => {
         await openSubjectRecord(page, home);
-        const ssn = ssnIn(page.locator('body'));
-        await reportIfMissing(page, ssn);
+        const ssn = { el: page.locator(RECORD_SSN_FIELD), isInput: true };
+        await reportIfMissing(page, ssn.el);
         await expectNoReveal(page, ssn);
       });
     }
