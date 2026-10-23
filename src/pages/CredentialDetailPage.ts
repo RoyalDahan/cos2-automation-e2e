@@ -1,5 +1,6 @@
 import { Page, Locator, expect } from '@playwright/test';
 import { BasePage } from './BasePage';
+import { appUrl } from '../utils/appUrl';
 
 export interface CredentialEdits {
   title?: string;
@@ -91,7 +92,7 @@ export class CredentialDetailPage extends BasePage {
   }
 
   async goto(documentId: string, seid: string, edit = false): Promise<void> {
-    await this.page.goto(`/credential/${documentId}?seid=${seid}${edit ? '&edit=1' : ''}`);
+    await this.page.goto(appUrl(`/credential/${documentId}?seid=${seid}${edit ? '&edit=1' : ''}`));
     await this.expectLoaded();
   }
 

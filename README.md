@@ -30,6 +30,7 @@ Each accepts a mode:
 ```
 Admin.bat              headed — a visible Edge window you can watch     (default)
 Admin.bat headless     no visible browser, fastest
+Admin.bat slow         headed, pausing one second before every click and keystroke
 Admin.bat debug        step through with the Playwright Inspector
 Admin.bat ui           open the Playwright UI runner
 ```
@@ -260,6 +261,7 @@ COS_VIEW_USER=cp-dahan_david@lacoe.edu
 
 LOGIN_WAIT_MS=180000
 # BROWSER_WINDOW_POSITION=-1920,0
+# SLOW_MO=1000
 ```
 
 Copy `.env.example` to `.env` to start. There are no passwords: sign-in goes through Microsoft

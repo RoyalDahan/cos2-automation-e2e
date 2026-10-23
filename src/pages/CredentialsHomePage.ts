@@ -1,5 +1,6 @@
 import { Page, Locator, expect } from '@playwright/test';
 import { BasePage } from './BasePage';
+import { appUrl } from '../utils/appUrl';
 
 /**
  * Credentials Home - the landing screen after portal authentication.
@@ -53,7 +54,7 @@ export class CredentialsHomePage extends BasePage {
     if (await this.header.isVisible().catch(() => false)) {
       await this.header.click();
     } else {
-      await this.page.goto('/');
+      await this.page.goto(appUrl('/'));
     }
     await this.page.waitForLoadState('load');
     await expect.poll(() => new URL(this.page.url()).pathname).toBe('/');

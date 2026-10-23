@@ -1,6 +1,7 @@
 import { test, expect } from '../fixtures/cos.fixture';
 import { Role } from '../roles/roles';
 import { EDUCATORS } from '../data/testData';
+import { appUrl } from '../utils/appUrl';
 
 /**
  * Permission matrix (PERM)
@@ -63,7 +64,7 @@ export function registerPermissionsSuite(role: Role): void {
       });
 
       test('PERM-007 a direct URL to the editor is refused @negative', async ({ page }) => {
-        await page.goto('/educator/edit');
+        await page.goto(appUrl('/educator/edit'));
         await page.waitForTimeout(1_500);
 
         const stillOnEditor = /\/educator\/edit/.test(page.url());

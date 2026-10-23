@@ -7,6 +7,7 @@ REM  reach the Admin area or any editor.
 REM
 REM  Usage:   View.bat            run headed (you can watch it)
 REM           View.bat headless   run with no visible browser
+REM           View.bat slow       run headed, pausing 1s before every action
 REM           View.bat debug      step through with the Playwright Inspector
 REM           View.bat ui         open the Playwright UI runner
 REM
@@ -21,11 +22,12 @@ set "MODE=%~1"
 
 if /i "%MODE%"=="headless" set "HEADLESS=1"
 if /i "%MODE%"=="debug"    set "PWDEBUG=1"
+if /i "%MODE%"=="slow"     set "SLOW_MO=1000"
 
 echo.
 echo ========================================
 echo  COS2 regression - VIEW-ONLY role
-if /i "%MODE%"=="headless" (echo  mode: headless) else (echo  mode: headed)
+if /i "%MODE%"=="headless" (echo  mode: headless) else if /i "%MODE%"=="slow" (echo  mode: headed, slowed down) else (echo  mode: headed)
 echo ========================================
 echo.
 

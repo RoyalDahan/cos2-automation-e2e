@@ -39,7 +39,8 @@ const EDGE_PATHS = [
 /** Written beside the profile so a later run knows how the running browser was started. */
 interface BrowserState {
   port: number;
-  headless: boolean;
+  /** Command-line switches it was started with; any difference means restart it. */
+  args: string[];
 }
 
 function executable(): string {
@@ -96,13 +97,18 @@ async function shutDown(port: number): Promise<void> {
   await waitFor(async () => !(await isListening(port)), 15_000, 'the old browser to close');
 }
 
-function start(profileDir: string, port: number, headless: boolean): void {
+function argsFor(profileDir: string, port: number, headless: boolean): string[] {
   const args = [
     `--remote-debugging-port=${port}`,
     `--user-data-dir=${path.join(ROOT, profileDir)}`,
     '--no-first-run',
     '--no-default-browser-check',
     '--ignore-certificate-errors',
+    // Extensions inject their own markup into the page under test (MozBar adds a second
+    // <html> element), and Edge sync would install them into the profile. Playwright
+    // turned both off when it launched the browser; now it is ours to do.
+    '--disable-extensions',
+    '--disable-sync',
   ];
   // The cloud container runs as root, which Chromium refuses to do sandboxed.
   if (IN_CLAUDE_CLOUD) args.push('--no-sandbox');
@@ -116,33 +122,41 @@ function start(profileDir: string, port: number, headless: boolean): void {
     }
     args.push('--start-maximized');
   }
-  args.push('about:blank');
+  return args;
+}
 
+function start(profileDir: string, args: string[]): void {
   fs.mkdirSync(path.join(ROOT, profileDir), { recursive: true });
-  const child = spawn(executable(), args, { detached: true, stdio: 'ignore' });
+  const child = spawn(executable(), [...args, 'about:blank'], { detached: true, stdio: 'ignore' });
   child.unref();
-  const state: BrowserState = { port, headless };
+  const state: BrowserState = { port: portFor(profileDir), args };
   fs.writeFileSync(stateFile(profileDir), JSON.stringify(state));
 }
 
 /**
  * Connects to the account's browser, starting it first if it is not already running.
- * A browser left running in the other mode (headless vs visible) is restarted, so asking
- * for a visible run never silently attaches to an invisible window.
+ * A browser left running with different settings - headless instead of visible, or from
+ * an older version of this file - is restarted, so a run never silently attaches to a
+ * window that does not match what was asked for. The profile, and the sign-in in it,
+ * survive the restart.
  */
 export async function attachToBrowser(profileDir: string): Promise<Browser> {
   const headless = IN_CLAUDE_CLOUD || process.env.HEADLESS === '1';
   const port = portFor(profileDir);
 
+  const args = argsFor(profileDir, port, headless);
+
   if (await isListening(port)) {
-    if (readState(profileDir)?.headless !== headless) {
+    if (readState(profileDir)?.args?.join(' ') !== args.join(' ')) {
       await shutDown(port);
-      start(profileDir, port, headless);
+      start(profileDir, args);
     }
   } else {
-    start(profileDir, port, headless);
+    start(profileDir, args);
   }
 
   await waitFor(() => isListening(port), 30_000, `the browser on port ${port} to start`);
-  return chromium.connectOverCDP(`http://127.0.0.1:${port}`);
+  // SLOW_MO=1000 pauses a second before every click, fill and navigation, so a person can
+  // follow along. Set by "Admin.bat slow", or in .env.
+  return chromium.connectOverCDP(`http://127.0.0.1:${port}`, { slowMo: Number(process.env.SLOW_MO) || 0 });
 }

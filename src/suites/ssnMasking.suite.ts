@@ -37,6 +37,25 @@ async function openSubjectRecord(page: Page, home: CredentialsHomePage): Promise
   await expect(page).toHaveURL(/\/educator\/\d+$/);
 }
 
+/**
+ * When the SSN cannot be found, attach every element holding its last four digits - as
+ * text or as an input value - to the report and the console, so the markup to target is
+ * right there in the failure instead of needing a DevTools session to find.
+ */
+async function reportIfMissing(page: Page, ssn: Locator): Promise<void> {
+  if (await ssn.waitFor({ timeout: 10_000 }).then(() => true, () => false)) return;
+  const last4 = SUBJECT.ssn.slice(-4);
+  const candidates = await page.evaluate((digits) => {
+    const holds = (el: Element) =>
+      Array.from(el.childNodes).some((n) => n.nodeType === Node.TEXT_NODE && n.textContent?.includes(digits)) ||
+      ((el as HTMLInputElement).value ?? '').toString().includes(digits);
+    return Array.from(document.querySelectorAll('body *')).filter(holds).map((el) => el.outerHTML.slice(0, 400));
+  }, last4);
+  const body = [`URL: ${page.url()}`, ...(candidates.length ? candidates : [`nothing on the page contains ${last4}`])].join('\n\n');
+  await test.info().attach('ssn-candidates', { body, contentType: 'text/plain' });
+  console.log(`\nSSN element not found. Elements containing ${last4}:\n${body}\n`);
+}
+
 /** Masked -> click -> full -> click -> masked again. */
 async function expectToggleRevealsAndHides(ssn: Locator): Promise<void> {
   await expect(ssn, 'SSN must be masked until the user asks to see it').toHaveText(MASKED);
@@ -74,7 +93,9 @@ export function registerSsnMaskingSuite(role: Role): void {
 
       test('SSN-002 educator record: clicking the SSN reveals it, clicking again masks it', async ({ page, home }) => {
         await openSubjectRecord(page, home);
-        await expectToggleRevealsAndHides(ssnIn(page.locator('body')));
+        const ssn = ssnIn(page.locator('body'));
+        await reportIfMissing(page, ssn);
+        await expectToggleRevealsAndHides(ssn);
       });
     } else {
       test('SSN-003 search results: only the last four digits are shown and a click reveals nothing @negative', async ({ page, home, results }) => {
@@ -86,7 +107,9 @@ export function registerSsnMaskingSuite(role: Role): void {
 
       test('SSN-004 educator record: only the last four digits are shown and a click reveals nothing @negative', async ({ page, home }) => {
         await openSubjectRecord(page, home);
-        await expectNoReveal(page, ssnIn(page.locator('body')));
+        const ssn = ssnIn(page.locator('body'));
+        await reportIfMissing(page, ssn);
+        await expectNoReveal(page, ssn);
       });
     }
   });

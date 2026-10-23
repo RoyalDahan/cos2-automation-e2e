@@ -1,5 +1,6 @@
 import { Page, Locator, expect } from '@playwright/test';
 import { BasePage } from './BasePage';
+import { appUrl } from '../utils/appUrl';
 
 /**
  * The Admin area - reference-data maintenance, restricted to the Credential Online
@@ -26,7 +27,7 @@ export class AdminPage extends BasePage {
   }
 
   async goto(): Promise<void> {
-    await this.page.goto('/admin');
+    await this.page.goto(appUrl('/admin'));
     await this.page.waitForLoadState('load');
     // Blazor may redirect client-side after the load event.
     await this.page.waitForTimeout(1_500);

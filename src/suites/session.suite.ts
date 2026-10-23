@@ -1,5 +1,6 @@
 import { test, expect } from '../fixtures/cos.fixture';
 import { Role } from '../roles/roles';
+import { appUrl } from '../utils/appUrl';
 
 /**
  * Session & chrome (SESS)
@@ -46,7 +47,7 @@ export function registerSessionSuite(role: Role): void {
 
     test('SESS-005 a deep link into the app is served, not bounced to sign-in', async ({ page, home }) => {
       // An authenticated session must survive direct navigation, not only in-app clicks.
-      await page.goto('/');
+      await page.goto(appUrl('/'));
       await home.expectLoaded();
       await expect(page).not.toHaveURL(/login|signin|districtbusinessportal/i);
     });
